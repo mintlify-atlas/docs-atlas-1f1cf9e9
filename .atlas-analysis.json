@@ -1,0 +1,63 @@
+{
+  "projectType": "saas",
+  "projectName": "Python Arcade Suite",
+  "projectDescription": "A collection of interactive arcade games and logic puzzles built with Python and deployed as a Streamlit web app.",
+  "theme": "almond",
+  "primaryColor": "#FF4B4B",
+  "lightColor": "#FFE5E5",
+  "darkColor": "#CC3C3C",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "installation"
+        ]
+      },
+      {
+        "group": "Games",
+        "pages": [
+          "games/overview",
+          "games/blackjack",
+          "games/hangman",
+          "games/rock-paper-scissors"
+        ]
+      },
+      {
+        "group": "Technical Guide",
+        "pages": [
+          "technical/architecture",
+          "technical/state-management",
+          "technical/game-logic"
+        ]
+      },
+      {
+        "group": "Deployment",
+        "pages": [
+          "deployment/local",
+          "deployment/streamlit-cloud"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Three classic arcade games (Blackjack, Hangman, Rock Paper Scissors)",
+    "Session state management for persistent gameplay",
+    "Interactive web interface with Streamlit widgets",
+    "Score tracking and game history",
+    "Deployed on Streamlit Cloud with CI/CD"
+  ],
+  "publicApiSurface": [
+    "streamlit_app.main() - Main application entry point",
+    "blackjack.streamlit_game.app() - Blackjack game module",
+    "Hangman.streamlit_game.app() - Hangman game module",
+    "Rock_paper_or_scissors.streamlit_game.app() - Rock Paper Scissors module",
+    "blackjack.deck_of_cards() - Create deck of cards",
+    "blackjack.card_value() - Calculate card value",
+    "blackjack.hand_value() - Calculate hand value",
+    "hangman.get_hangman_art() - Get ASCII art for hangman stages",
+    "rps.get_winner() - Determine game winner"
+  ]
+}

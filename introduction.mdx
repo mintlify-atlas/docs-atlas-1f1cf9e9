@@ -1,0 +1,118 @@
+---
+title: 'Introduction'
+description: 'Welcome to Python Arcade Suite - A collection of classic games built with Python and Streamlit'
+---
+
+# Python Arcade Suite
+
+Python Arcade Suite is a **SaaS web application** featuring a collection of interactive classic arcade games and logic puzzles, built entirely in Python and powered by Streamlit. Experience the nostalgia of classic games with a modern, responsive web interface.
+
+<Card title="Live Demo" icon="gamepad" href="https://simplegames-46v2swaudmtbld5233dwbp.streamlit.app/">
+  Play the games now - no installation required!
+</Card>
+
+## What's Inside
+
+The suite includes three distinct games, each showcasing different programming concepts and gameplay mechanics:
+
+<CardGroup cols={3}>
+  <Card title="Blackjack" icon="spade">
+    Strategic card game against a dealer algorithm with deck management and score calculation
+  </Card>
+  <Card title="Hangman" icon="a">
+    Classic word-guessing game featuring string manipulation and visual ASCII art updates
+  </Card>
+  <Card title="Rock, Paper, Scissors" icon="hand-scissors">
+    Quick luck-based game with persistent score tracking and real-time updates
+  </Card>
+</CardGroup>
+
+## Why Python Arcade Suite?
+
+This project goes beyond simple game scripting by implementing professional-grade web application features:
+
+### Session State Management
+
+Unlike standard Python scripts, Streamlit re-runs code on every user interaction. Python Arcade Suite effectively manages state to persist:
+- Game scores across rounds
+- Card hands in Blackjack
+- Guessed letters in Hangman
+- Match history in Rock, Paper, Scissors
+
+<Info>
+  All game state is managed using `st.session_state`, ensuring smooth gameplay without losing progress between interactions.
+</Info>
+
+### Modular Architecture
+
+The codebase follows a clean, modular design pattern:
+
+```plaintext
+streamlit_app.py          # Main entry point and game selector
+├── blackjack/
+│   └── streamlit_game.py # Blackjack game logic
+├── Hangman/
+│   └── streamlit_game.py # Hangman game logic
+└── Rock_paper_or_scissors/
+    └── streamlit_game.py # RPS game logic
+```
+
+Each game is self-contained with its own `app()` function, making the code maintainable and easy to extend.
+
+### Responsive User Interface
+
+The application features:
+- **Interactive widgets**: Buttons, text inputs, and selectors for seamless gameplay
+- **Real-time updates**: Instant visual feedback using Streamlit's rerun mechanism
+- **Visual feedback**: Success/error messages, balloons on wins, and ASCII art for Hangman
+- **Sidebar navigation**: Easy switching between games without losing state
+
+## Technical Stack
+
+<CardGroup cols={2}>
+  <Card title="Python 3.9+" icon="python">
+    Core programming language
+  </Card>
+  <Card title="Streamlit" icon="bolt">
+    Web framework for interactive apps
+  </Card>
+  <Card title="Streamlit Cloud" icon="cloud">
+    Deployment platform with CI/CD
+  </Card>
+  <Card title="GitHub" icon="github">
+    Version control and source repository
+  </Card>
+</CardGroup>
+
+## Key Features
+
+- **Zero Configuration**: No database or complex setup required
+- **Instant Play**: Games load in seconds with no installation
+- **Persistent Scores**: Session-based score tracking across multiple rounds
+- **Mobile Friendly**: Responsive design works on any device
+- **Open Source**: MIT licensed - fork and customize as you like
+
+## What You'll Learn
+
+By exploring this project, you'll understand:
+
+1. **Streamlit State Management**: How to handle session state in Streamlit apps
+2. **Game Logic Implementation**: Card deck management, win/loss conditions, and scoring systems
+3. **Modular Design Patterns**: Building maintainable multi-page applications
+4. **UI/UX Best Practices**: Creating intuitive interfaces with Streamlit widgets
+5. **Deployment Workflows**: Publishing apps on Streamlit Cloud with CI/CD
+
+<Tip>
+  Ready to get started? Head to the [Quickstart Guide](/quickstart) to run the app locally in under 5 minutes!
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get the app running in 5 minutes
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Detailed setup instructions
+  </Card>
+</CardGroup>

@@ -1,0 +1,322 @@
+---
+title: 'Hangman'
+description: 'Classic word-guessing game - guess the word before you run out of attempts'
+icon: 'game-board'
+---
+
+## Overview
+
+Hangman (Ahorcado) is a classic word-guessing game where you must identify a hidden word by guessing one letter at a time. You have 6 attempts to guess the word correctly before the hangman drawing is completed.
+
+<Note>
+  The game features ASCII art that progressively builds the hangman figure with each wrong guess, creating visual tension!
+</Note>
+
+## How to Play
+
+### Game Rules
+
+1. **Objective**: Guess the hidden word by selecting letters from the alphabet
+2. **Attempts**: You start with 6 attempts (lives)
+3. **Correct Guess**: The letter appears in its correct position(s) in the word
+4. **Wrong Guess**: You lose one attempt and the hangman drawing progresses
+5. **Win**: Reveal all letters before running out of attempts
+6. **Lose**: Use all 6 attempts without completing the word
+
+### Game Interface
+
+The interface is split into two columns:
+
+**Left Column**:
+- ASCII art hangman drawing (updates with each wrong guess)
+- Remaining attempts counter
+
+**Right Column**:
+- The hidden word displayed with underscores (_) for unguessed letters
+- Interactive letter keyboard (A-Z including Ñ)
+- Game result messages
+
+## Implementation Details
+
+### Word Loading
+
+The game loads words from an external file:
+
+```python streamlit_game.py:5
+def read_words_from_file(filepath):
+    try:
+        with open(filepath, 'r', encoding='utf-8') as file:
+            words = [line.strip().upper() for line in file if line.strip()]
+        return words
+    except FileNotFoundError:
+        return ["PYTHON", "STREAMLIT", "DEVELOPER", "AHORCADO"] # Fallback
+```
+
+**Key features**:
+- Reads words from `Hangman/DATA/DATA.txt`
+- Converts all words to uppercase for consistency
+- Provides fallback words if file is missing
+- UTF-8 encoding supports Spanish characters (Ñ)
+
+<Tip>
+  You can customize the game by adding your own words to the DATA.txt file!
+</Tip>
+
+### ASCII Art Hangman
+
+The game displays different stages of the hangman based on remaining attempts:
+
+```python streamlit_game.py:13
+def get_hangman_art(attempts_left):
+    mapping = {
+        6: """  # Empty gallows
+           --------
+           |      |
+           |      
+           |    
+           |      
+           |     
+           -
+        """,
+        0: """  # Complete hangman
+           --------
+           |      |
+           |      O
+           |     /|\\  
+           |      |
+           |     / \\
+           -
+        """
+    }
+    return mapping.get(attempts_left, "")
+```
+
+**Progressive stages** (6 → 0 attempts):
+1. **6 attempts**: Empty gallows
+2. **5 attempts**: Head added (O)
+3. **4 attempts**: Body added (|)
+4. **3 attempts**: Left arm added (/|)
+5. **2 attempts**: Right arm added (/|\\)
+6. **1 attempt**: Left leg added (/|\\, |, /)
+7. **0 attempts**: Complete figure (/|\\, |, / \\)
+
+<Accordion title="Why ASCII Art?">
+  ASCII art provides:
+  - **Universal compatibility**: Works in any text-based interface
+  - **No external assets**: No need for image files
+  - **Instant rendering**: Fast display without loading times
+  - **Classic feel**: Authentic to the original pen-and-paper game
+</Accordion>
+
+### Game Initialization
+
+```python streamlit_game.py:149
+def init_game():
+    filepath = os.path.join("Hangman", "DATA", "DATA.txt")
+    words = read_words_from_file(filepath)
+    st.session_state.hangman_word = random.choice(words)
+    st.session_state.hangman_guessed = set()
+    st.session_state.hangman_attempts = 6
+    st.session_state.hangman_game_over = False
+    st.session_state.hangman_result = ""
+```
+
+Session state variables:
+- `hangman_word`: The randomly selected word to guess
+- `hangman_guessed`: Set of letters already guessed (prevents duplicates)
+- `hangman_attempts`: Remaining lives (starts at 6)
+- `hangman_game_over`: Game completion flag
+- `hangman_result`: Win/loss message
+
+### Word Display Logic
+
+The game reveals letters as they're guessed:
+
+```python streamlit_game.py:174
+display_word = []
+won = True
+for char in st.session_state.hangman_word:
+    if char in st.session_state.hangman_guessed:
+        display_word.append(char)
+    else:
+        display_word.append("_")
+        won = False
+
+st.markdown(f"## {' '.join(display_word)}")
+```
+
+**How it works**:
+1. Iterate through each character in the secret word
+2. If the character has been guessed, show it
+3. Otherwise, show an underscore
+4. If any underscores remain, the game isn't won yet
+5. Display with spaces between letters for readability
+
+<Accordion title="Example Display">
+  **Secret word**: PYTHON
+  
+  **No guesses**: _ _ _ _ _ _
+  
+  **Guessed P, O**: P _ _ _ O _
+  
+  **Guessed P, O, N**: P _ _ _ O N
+  
+  **Complete**: P Y T H O N
+</Accordion>
+
+### Interactive Keyboard
+
+The game creates a dynamic letter grid:
+
+```python streamlit_game.py:202
+if not st.session_state.hangman_game_over:
+    st.write("Elige una letra:")
+    alphabet = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"
+    # Create a grid of buttons
+    cols = st.columns(7)
+    for i, letter in enumerate(alphabet):
+        if letter not in st.session_state.hangman_guessed:
+            if cols[i % 7].button(letter, key=f"btn_{letter}"):
+                st.session_state.hangman_guessed.add(letter)
+                if letter not in st.session_state.hangman_word:
+                    st.session_state.hangman_attempts -= 1
+                st.rerun()
+        else:
+            cols[i % 7].button(" ", disabled=True, key=f"btn_{letter}_dis")
+```
+
+**Keyboard features**:
+- **7 columns**: Creates a neat grid layout
+- **27 letters**: Spanish alphabet (A-Z + Ñ)
+- **Dynamic state**: Used letters become disabled
+- **Modulo positioning**: `i % 7` wraps letters to new rows
+- **Instant feedback**: Wrong guesses reduce attempts immediately
+
+<Note>
+  The keyboard includes Ñ to support Spanish words like "NIÑO" or "ESPAÑOL"!
+</Note>
+
+### Win/Loss Detection
+
+```python streamlit_game.py:186
+if won and not st.session_state.hangman_game_over:
+    st.session_state.hangman_result = "¡Felicidades! Ganaste."
+    st.session_state.hangman_game_over = True
+
+if st.session_state.hangman_attempts <= 0 and not st.session_state.hangman_game_over:
+    st.session_state.hangman_result = f"Perdiste. La palabra era: {st.session_state.hangman_word}"
+    st.session_state.hangman_game_over = True
+```
+
+**Win condition**: All letters revealed (`won = True`)
+
+**Loss condition**: Attempts reach 0
+
+**Result display**:
+- Win: Green success message
+- Loss: Red error message with revealed word
+
+## Tips & Strategy
+
+<Accordion title="Best Letters to Guess First">
+  **In English**:
+  - Vowels: E, A, O, I, U (appear in most words)
+  - Common consonants: T, N, S, R, H
+  
+  **In Spanish** (this game):
+  - Vowels: A, E, O, I, U
+  - Common consonants: S, N, R, L, D
+  
+  Start with common letters to reveal the word structure quickly!
+</Accordion>
+
+<Accordion title="Pattern Recognition">
+  - **Short words** (3-4 letters): Guess vowels first
+  - **Long words** (7+ letters): Look for common endings (-TION, -MENTE)
+  - **Double letters**: If you find one, the same letter might appear again
+  - **Word fragments**: _ A _ A could be CASA, RATA, NADA, etc.
+</Accordion>
+
+<Accordion title="Attempt Management">
+  - **Don't guess randomly**: Think about likely letters
+  - **Use word knowledge**: Consider common Spanish words
+  - **Avoid rare letters early**: Save Q, X, Z for when you have more context
+  - **6 attempts is more than it seems**: Don't panic on the first wrong guess
+</Accordion>
+
+## Code Architecture
+
+### Session State Variables
+
+| Variable | Type | Purpose |
+|----------|------|----------|
+| `hangman_word` | str | The secret word to guess |
+| `hangman_guessed` | set | Letters already guessed |
+| `hangman_attempts` | int | Remaining wrong guesses allowed |
+| `hangman_game_over` | bool | Whether game has ended |
+| `hangman_result` | str | Win/loss message |
+
+<Tip>
+  Using a `set()` for guessed letters ensures O(1) lookup time and prevents duplicate guesses!
+</Tip>
+
+### UI Layout Structure
+
+```python streamlit_game.py:167
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.text(get_hangman_art(st.session_state.hangman_attempts))
+    st.write(f"Intentos restantes: {st.session_state.hangman_attempts}")
+
+with col2:
+    # Display word with underscores
+    # Show keyboard
+    # Display result
+```
+
+**Equal columns** (`[1, 1]`) create a balanced layout with ASCII art on the left and game controls on the right.
+
+## Game Flow Diagram
+
+```
+Game Start
+    ↓
+Load random word → Initialize attempts (6) → Clear guessed set
+    ↓
+Display interface: [Hangman Art] [Word: _ _ _ _] [Keyboard]
+    ↓
+Player clicks letter
+    ↓
+    ├─ Letter in word? → YES → Reveal letter(s) → Check win
+    │                      ↓
+    │                     Display updated word
+    │
+    └─ Letter in word? → NO → Decrease attempts → Check loss
+                          ↓
+                        Update hangman art
+```
+
+## Customization Ideas
+
+<Accordion title="Add Custom Word Lists">
+  Create themed word lists:
+  - Programming terms: PYTHON, JAVASCRIPT, ALGORITHM
+  - Countries: ESPAÑA, MEXICO, ARGENTINA
+  - Animals: ELEFANTE, JIRAFA, RINOCERONTE
+  
+  Simply add them to `DATA.txt`, one word per line!
+</Accordion>
+
+<Accordion title="Difficulty Levels">
+  Modify attempts based on word length:
+  ```python
+  word_length = len(st.session_state.hangman_word)
+  if word_length <= 4:
+      attempts = 4  # Harder for short words
+  elif word_length >= 8:
+      attempts = 8  # Easier for long words
+  else:
+      attempts = 6  # Standard
+  ```
+</Accordion>

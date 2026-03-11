@@ -1,97 +1,123 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Python Arcade Suite"
+description: "A collection of interactive arcade games and logic puzzles built with Python and deployed as a Streamlit web app"
 ---
 
-## Setting up
+# Welcome to Python Arcade Suite
 
-Get your documentation site up and running in minutes.
+Experience classic arcade games reimagined as interactive web applications. Built with Python and Streamlit, this suite demonstrates modern web development techniques while delivering fun, engaging gameplay.
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get up and running in minutes with our quick start guide
+  </Card>
+  <Card
+    title="View Live Demo"
+    icon="gamepad"
+    href="https://simplegames-46v2swaudmtbld5233dwbp.streamlit.app/"
+  >
+    Play the games now on Streamlit Cloud
+  </Card>
+</CardGroup>
+
+## Featured Games
+
+Explore three classic games, each showcasing different programming concepts and gameplay mechanics.
+
+<CardGroup cols={3}>
+  <Card
+    title="Blackjack"
+    icon="club"
+    href="/games/blackjack"
+  >
+    Test your luck and strategy against the dealer in this classic card game
+  </Card>
+  <Card
+    title="Hangman"
+    icon="pen"
+    href="/games/hangman"
+  >
+    Guess the word before you run out of attempts in this word puzzle game
+  </Card>
+  <Card
+    title="Rock Paper Scissors"
+    icon="hand-fist"
+    href="/games/rock-paper-scissors"
+  >
+    Challenge the computer in this quick-paced game of chance
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card
+    title="Session State Management"
+    icon="server"
+  >
+    Persistent gameplay across page reloads using Streamlit's session state
+  </Card>
+  <Card
+    title="Interactive Web UI"
+    icon="desktop"
+  >
+    Responsive interface built with Streamlit widgets and components
+  </Card>
+  <Card
+    title="Score Tracking"
+    icon="chart-line"
+  >
+    Real-time score updates and game history for competitive play
+  </Card>
+  <Card
+    title="Modular Architecture"
+    icon="cubes"
+  >
+    Clean, maintainable code structure with separate game modules
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Install Dependencies">
+    Install Streamlit and start building immediately
+    
+    ```bash
+    pip install streamlit
+    ```
+  </Step>
+  
+  <Step title="Run the Application">
+    Launch the game suite locally on your machine
+    
+    ```bash
+    streamlit run streamlit_app.py
+    ```
+  </Step>
+  
+  <Step title="Start Playing">
+    Select your game from the sidebar menu and enjoy!
+  </Step>
+</Steps>
+
+## Technical Highlights
+
+This project showcases several advanced Streamlit concepts:
+
+- **State Persistence**: Maintaining game state across Streamlit's re-run model
+- **Modular Design**: Independent game modules with clean interfaces
+- **Interactive Widgets**: Buttons, inputs, and custom UI components
+- **Conditional Rendering**: Dynamic UI based on game state
 
 <Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
+  title="Learn More"
+  icon="book"
+  href="/technical/architecture"
 >
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
+  Dive into the technical architecture and implementation details
 </Card>

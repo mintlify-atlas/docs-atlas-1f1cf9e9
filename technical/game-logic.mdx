@@ -1,0 +1,689 @@
+---
+title: 'Game Logic Implementation'
+description: 'Core algorithms, business logic, and implementation details for each game in the arcade suite'
+---
+
+## Overview
+
+Each game in Python Arcade Suite implements distinct algorithms and game mechanics. This guide examines the core logic, explaining how game rules are translated into Python code.
+
+## Blackjack: Card Game Logic
+
+Blackjack requires sophisticated card management, hand evaluation, and dealer AI.
+
+### Card Deck Generation
+
+```python
+def deck_of_cards():
+    DoC = []
+    numbers = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+    suits = ["♣", "♠", "♥", "♦"]
+    for suit in suits:
+        for number in numbers:
+            card = f"{number}{suit}"
+            DoC.append(card)
+    return DoC
+```
+
+**Algorithm:**
+1. Define 13 ranks (A through K)
+2. Define 4 suits (clubs, spades, hearts, diamonds)
+3. Create cartesian product: 13 × 4 = 52 cards
+4. Each card is a string combining rank and suit (e.g., "A♠", "10♥")
+
+**Design Decision:**
+Cards are represented as strings rather than objects. This simplifies serialization for session state and makes debugging easier (you can print a hand directly).
+
+<Note>
+The deck is generated fresh for each new game, ensuring a full 52-card deck with no duplicates.
+</Note>
+
+### Card Value Calculation
+
+```python
+def card_value(card):
+    if card[:-1] in ['K', 'Q', 'J', '10']:
+        return 10
+    elif card[0] == 'A':
+        return 11
+    else:
+        return int(card[:-1])
+```
+
+**String Parsing Logic:**
+- `card[:-1]`: Gets all characters except the last (removes suit symbol)
+- `card[0]`: Gets first character (works for rank check)
+
+**Value Rules:**
+1. Face cards (K, Q, J) and 10 → 10 points
+2. Ace → 11 points (soft value)
+3. Number cards → Face value
+
+<Warning>
+Notice that `card[:-1]` handles both "10♥" (yields "10") and "7♦" (yields "7"). The parsing must account for two-character ranks.
+</Warning>
+
+### Hand Value with Ace Adjustment
+
+The most complex logic in Blackjack is calculating hand value with flexible Ace handling:
+
+```python
+def hand_value(hand):
+    value = sum(card_value(card) for card in hand)
+    num_aces = sum(1 for card in hand if card[0] == 'A')
+    while value > 21 and num_aces:
+        value -= 10
+        num_aces -= 1
+    return value
+```
+
+**Algorithm Breakdown:**
+
+<Tabs>
+  <Tab title="Step 1: Calculate Total">
+    ```python
+    value = sum(card_value(card) for card in hand)
+    ```
+    
+    Calculate the sum treating all Aces as 11. For example:
+    - Hand: ["A♠", "A♥", "9♣"]
+    - Initial value: 11 + 11 + 9 = 31
+  </Tab>
+  <Tab title="Step 2: Count Aces">
+    ```python
+    num_aces = sum(1 for card in hand if card[0] == 'A')
+    ```
+    
+    Count how many Aces are in the hand:
+    - Hand: ["A♠", "A♥", "9♣"]
+    - num_aces: 2
+  </Tab>
+  <Tab title="Step 3: Adjust for Bust">
+    ```python
+    while value > 21 and num_aces:
+        value -= 10
+        num_aces -= 1
+    ```
+    
+    If over 21 and Aces remain, convert Aces from 11 to 1 (by subtracting 10):
+    - Iteration 1: value = 31 - 10 = 21, num_aces = 1
+    - Loop exits (21 is not > 21)
+    - Final value: 21
+  </Tab>
+</Tabs>
+
+**Why This Works:**
+- Aces start as 11 (soft)
+- If bust, convert to 1 (hard) by subtracting 10
+- Process one Ace at a time until under 22 or no more Aces
+
+**Example Scenarios:**
+
+```python
+# Scenario 1: Ace-King
+hand = ["A♠", "K♥"]
+value = 11 + 10 = 21
+num_aces = 1
+# 21 not > 21, no adjustment needed
+# Result: 21 (Blackjack!)
+
+# Scenario 2: Three Aces
+hand = ["A♠", "A♥", "A♣"]
+value = 11 + 11 + 11 = 33
+num_aces = 3
+# Iteration 1: 33 - 10 = 23, num_aces = 2
+# Iteration 2: 23 - 10 = 13, num_aces = 1
+# 13 not > 21, stop
+# Result: 13 (one Ace as 11, two as 1)
+
+# Scenario 3: Ace-Five-King
+hand = ["A♠", "5♥", "K♣"]
+value = 11 + 5 + 10 = 26
+num_aces = 1
+# Iteration 1: 26 - 10 = 16, num_aces = 0
+# Result: 16 (Ace counted as 1)
+```
+
+### Player Actions: Hit
+
+```python
+if st.button("Pedir Carta (Hit)"):
+    card = random.choice(st.session_state.deck)
+    st.session_state.deck.remove(card)
+    st.session_state.player_hand.append(card)
+    if hand_value(st.session_state.player_hand) > 21:
+        st.session_state.game_over = True
+        st.session_state.result_message = "👎 Te pasaste de 21. ¡Perdiste!"
+    st.rerun()
+```
+
+**Logic Flow:**
+1. Randomly select a card from remaining deck
+2. Remove card from deck (prevent duplicates)
+3. Add to player's hand
+4. Check for bust (> 21)
+5. If bust, end game with loss message
+6. Re-run to display new card
+
+### Dealer AI: Stand Logic
+
+```python
+if st.button("Plantarse (Stand)"):
+    # Dealer plays
+    while hand_value(st.session_state.dealer_hand) < 17:
+        card = random.choice(st.session_state.deck)
+        st.session_state.deck.remove(card)
+        st.session_state.dealer_hand.append(card)
+    
+    player_final = hand_value(st.session_state.player_hand)
+    dealer_final = hand_value(st.session_state.dealer_hand)
+    
+    st.session_state.game_over = True
+    
+    if dealer_final > 21:
+        st.session_state.result_message = "👍 El crupier se pasó. ¡Ganaste!"
+    elif player_final > dealer_final:
+        st.session_state.result_message = "🏆 ¡Ganaste!"
+    elif player_final < dealer_final:
+        st.session_state.result_message = "💀 Perdiste."
+    else:
+        st.session_state.result_message = "🤝 Empate."
+    st.rerun()
+```
+
+**Dealer AI Rules:**
+1. Dealer must hit on 16 or less
+2. Dealer must stand on 17 or more
+3. This is standard casino blackjack rules
+
+**Win Condition Logic:**
+1. Check dealer bust first (player wins)
+2. Compare scores (higher wins)
+3. Equal scores = tie
+
+<Note>
+The dealer's strategy is deterministic and follows standard casino rules. There's no "smart" decision-making—the dealer always hits below 17.
+</Note>
+
+## Hangman: Word Puzzle Logic
+
+Hangman combines word management, letter checking, and visual feedback.
+
+### Word Loading with Fallback
+
+```python
+def read_words_from_file(filepath):
+    try:
+        with open(filepath, 'r', encoding='utf-8') as file:
+            words = [line.strip().upper() for line in file if line.strip()]
+        return words
+    except FileNotFoundError:
+        return ["PYTHON", "STREAMLIT", "DEVELOPER", "AHORCADO"]
+```
+
+**Error Handling Strategy:**
+- **Primary**: Load from external file
+- **Fallback**: Use hardcoded list if file not found
+- **Normalization**: Convert all words to uppercase for consistent comparison
+
+**List Comprehension Breakdown:**
+```python
+[line.strip().upper() for line in file if line.strip()]
+#     │        │           │                │
+#     │        │           │                └─ Filter: only non-empty lines
+#     │        │           └─ Iterate through file lines
+#     │        └─ Convert to uppercase
+#     └─ Remove whitespace
+```
+
+### ASCII Art Generation
+
+The hangman figure is generated based on remaining attempts:
+
+```python
+def get_hangman_art(attempts_left):
+    mapping = {
+        6: """
+           --------
+           |      |
+           |      
+           |    
+           |      
+           |     
+           -
+        """,
+        5: """
+           --------
+           |      |
+           |      O
+           |    
+           |      
+           |     
+           -
+        """,
+        # ... more stages ...
+        0: """
+           --------
+           |      |
+           |      O
+           |     /|\\  
+           |      |
+           |     / \\
+           -
+        """
+    }
+    return mapping.get(attempts_left, "")
+```
+
+**Progression:**
+- 6 attempts: Empty gallows
+- 5 attempts: Head
+- 4 attempts: Body
+- 3 attempts: Left arm
+- 2 attempts: Right arm
+- 1 attempt: Left leg
+- 0 attempts: Right leg (game over)
+
+<Warning>
+Backslashes in the ASCII art must be escaped: `\\` for a single backslash in the string.
+</Warning>
+
+### Word Display Logic
+
+```python
+display_word = []
+won = True
+for char in st.session_state.hangman_word:
+    if char in st.session_state.hangman_guessed:
+        display_word.append(char)
+    else:
+        display_word.append("_")
+        won = False
+
+st.markdown(f"## {' '.join(display_word)}")
+```
+
+**Algorithm:**
+1. Iterate through each character in the secret word
+2. If letter has been guessed, display it
+3. If not guessed, show underscore
+4. If any letter is not guessed, `won = False`
+5. Join with spaces for readable display
+
+**Example:**
+```python
+word = "PYTHON"
+guessed = {'P', 'O', 'N', 'X', 'Z'}
+
+# Result: "P _ _ O N"  (won = False)
+```
+
+### Letter Checking
+
+```python
+if cols[i % 7].button(letter, key=f"btn_{letter}"):
+    st.session_state.hangman_guessed.add(letter)
+    if letter not in st.session_state.hangman_word:
+        st.session_state.hangman_attempts -= 1
+    st.rerun()
+```
+
+**Logic:**
+1. User clicks a letter button
+2. Add letter to guessed set
+3. Check if letter exists in word
+4. If not, decrement attempts (wrong guess)
+5. Re-run to update display
+
+**Important**: Correct guesses don't reduce attempts, only wrong ones.
+
+### Win/Loss Detection
+
+```python
+if won and not st.session_state.hangman_game_over:
+    st.session_state.hangman_result = "¡Felicidades! Ganaste."
+    st.session_state.hangman_game_over = True
+
+if st.session_state.hangman_attempts <= 0 and not st.session_state.hangman_game_over:
+    st.session_state.hangman_result = f"Perdiste. La palabra era: {st.session_state.hangman_word}"
+    st.session_state.hangman_game_over = True
+```
+
+**Two Win Conditions:**
+1. **Win**: All letters guessed (`won = True`)
+2. **Loss**: Zero attempts remaining
+
+**Guard Condition**: `not st.session_state.hangman_game_over` prevents these from running multiple times.
+
+### Dynamic Button Grid
+
+```python
+alphabet = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"
+cols = st.columns(7)
+for i, letter in enumerate(alphabet):
+    if letter not in st.session_state.hangman_guessed:
+        if cols[i % 7].button(letter, key=f"btn_{letter}"):
+            st.session_state.hangman_guessed.add(letter)
+            if letter not in st.session_state.hangman_word:
+                st.session_state.hangman_attempts -= 1
+            st.rerun()
+    else:
+        cols[i % 7].button(" ", disabled=True, key=f"btn_{letter}_dis")
+```
+
+**Grid Layout:**
+- Create 7 columns
+- Use modulo operator (`i % 7`) to wrap letters across columns
+- 27 letters ÷ 7 columns = ~4 rows
+
+**Dynamic Buttons:**
+- Not guessed: Active button with letter label
+- Guessed: Disabled button with blank label
+- Each button needs a unique key to avoid Streamlit key conflicts
+
+<Note>
+The Spanish alphabet includes "Ñ", which is why there are 27 letters instead of 26.
+</Note>
+
+## Rock Paper Scissors: Game Logic
+
+The simplest game logic but with persistent scoring.
+
+### Winner Determination
+
+```python
+def get_winner(user, computer):
+    if user == computer:
+        return "Empate"
+    elif (user == "Piedra" and computer == "Tijera") or \
+         (user == "Papel" and computer == "Piedra") or \
+         (user == "Tijera" and computer == "Papel"):
+        return "Usuario"
+    else:
+        return "Computadora"
+```
+
+**Logic Table:**
+
+| User | Computer | Winner |
+|------|----------|--------|
+| Piedra | Tijera | Usuario (rock crushes scissors) |
+| Papel | Piedra | Usuario (paper covers rock) |
+| Tijera | Papel | Usuario (scissors cut paper) |
+| Same | Same | Empate (tie) |
+| Other | Other | Computadora (all other combos) |
+
+**Algorithm:**
+1. Check for tie first (simplest case)
+2. Check all three winning conditions for user
+3. Everything else is a computer win
+
+<Tabs>
+  <Tab title="Approach 1: Explicit Conditions">
+    The current implementation explicitly lists winning conditions:
+    
+    ```python
+    if user == computer:
+        return "Empate"
+    elif (user == "Piedra" and computer == "Tijera") or \
+         (user == "Papel" and computer == "Piedra") or \
+         (user == "Tijera" and computer == "Papel"):
+        return "Usuario"
+    else:
+        return "Computadora"
+    ```
+    
+    **Pros**: Clear, readable, easy to understand
+    **Cons**: Verbose, not easily extensible
+  </Tab>
+  <Tab title="Approach 2: Dictionary Lookup">
+    An alternative using a rules dictionary:
+    
+    ```python
+    def get_winner(user, computer):
+        if user == computer:
+            return "Empate"
+        
+        wins = {
+            "Piedra": "Tijera",
+            "Papel": "Piedra",
+            "Tijera": "Papel"
+        }
+        
+        return "Usuario" if wins[user] == computer else "Computadora"
+    ```
+    
+    **Pros**: More concise, easier to extend with new options
+    **Cons**: Less immediately obvious what beats what
+  </Tab>
+  <Tab title="Approach 3: Modular Arithmetic">
+    Using numeric values and modulo:
+    
+    ```python
+    def get_winner(user, computer):
+        choices = {"Piedra": 0, "Papel": 1, "Tijera": 2}
+        u, c = choices[user], choices[computer]
+        
+        if u == c:
+            return "Empate"
+        elif (u - c) % 3 == 1:
+            return "Usuario"
+        else:
+            return "Computadora"
+    ```
+    
+    **Pros**: Mathematical, elegant
+    **Cons**: Harder to understand, overkill for 3 options
+  </Tab>
+</Tabs>
+
+### Computer AI
+
+```python
+options = ["Piedra", "Papel", "Tijera"]
+computer_choice = random.choice(options)
+```
+
+The computer uses pure random selection—no strategy, no pattern. This ensures:
+- Fair gameplay
+- Unpredictability
+- Equal probability for each option (33.33%)
+
+### Score Tracking
+
+```python
+result = get_winner(user_choice, computer_choice)
+
+msg = f"Tú: {user_choice} vs CPU: {computer_choice} -> "
+if result == "Usuario":
+    st.session_state.rps_user_score += 1
+    msg += "¡Ganaste! 🎉"
+    st.balloons()
+elif result == "Computadora":
+    st.session_state.rps_computer_score += 1
+    msg += "Perdiste. 🤖"
+else:
+    msg += "Empate. 🤝"
+
+st.session_state.rps_round_result = msg
+st.session_state.rps_history.insert(0, msg)
+```
+
+**Score Updates:**
+- User win: Increment `rps_user_score`
+- Computer win: Increment `rps_computer_score`
+- Tie: No score change
+
+**History Management:**
+```python
+st.session_state.rps_history.insert(0, msg)
+```
+Insert at index 0 to add new results at the top (most recent first).
+
+**Visual Feedback:**
+```python
+st.balloons()
+```
+Streamlit's built-in celebration animation for user wins.
+
+### History Display
+
+```python
+if st.session_state.rps_history:
+    st.subheader("Historial")
+    for h in st.session_state.rps_history[:5]:
+        st.text(h)
+```
+
+**List Slicing:** `[:5]` limits display to most recent 5 rounds, preventing UI overflow.
+
+## Comparative Analysis
+
+### Complexity Comparison
+
+| Game | Algorithm Complexity | State Complexity | UI Complexity |
+|------|---------------------|------------------|---------------|
+| **Blackjack** | High (card values, Ace handling) | Medium (deck, hands, game state) | Medium (conditional dealer reveal) |
+| **Hangman** | Medium (word checking, display logic) | Low (word, guessed set, attempts) | High (dynamic button grid, ASCII art) |
+| **RPS** | Low (simple winner logic) | Low (scores, last result) | Low (3 buttons, score display) |
+
+### Code Patterns
+
+<CodeGroup>
+```python Blackjack Pattern
+# Generate game objects
+deck = generate_deck()
+
+# Draw and modify state
+card = random.choice(deck)
+deck.remove(card)
+hand.append(card)
+
+# Calculate derived values
+value = calculate_hand_value(hand)
+
+# Check win conditions
+if value > 21:
+    game_over = True
+```
+
+```python Hangman Pattern
+# Load external data
+words = load_from_file()
+
+# Track user input
+guessed_letters.add(letter)
+
+# Display with masking
+display = mask_word(word, guessed_letters)
+
+# Check completion
+if all_letters_guessed:
+    win = True
+```
+
+```python RPS Pattern
+# Get user input
+user_choice = button_selection()
+
+# Generate random opponent
+computer_choice = random.choice(options)
+
+# Determine outcome
+winner = compare(user_choice, computer_choice)
+
+# Update persistent score
+score[winner] += 1
+```
+</CodeGroup>
+
+## Best Practices Demonstrated
+
+1. **Pure Functions**: Helper functions like `card_value()` and `get_winner()` are pure—same input always produces same output
+
+2. **Single Responsibility**: Each function has one clear job
+   - `deck_of_cards()`: Generate deck
+   - `hand_value()`: Calculate value
+   - `get_hangman_art()`: Return ASCII art
+
+3. **Defensive Programming**: Error handling with fallbacks
+   ```python
+   except FileNotFoundError:
+       return ["PYTHON", "STREAMLIT", ...]  # Fallback
+   ```
+
+4. **Clear Naming**: Function names describe exactly what they do
+   - `hand_value()` not `calc()`
+   - `get_winner()` not `check()`
+
+5. **Separation of Logic and Display**: Core game logic is separate from Streamlit UI code
+
+## Performance Considerations
+
+### Blackjack: Deck Management
+
+```python
+card = random.choice(st.session_state.deck)
+st.session_state.deck.remove(card)
+```
+
+**Time Complexity:** O(n) for `remove()` where n is remaining cards.
+
+**Optimization Opportunity:**
+For high-performance needs, use index-based removal:
+```python
+index = random.randint(0, len(deck) - 1)
+card = deck.pop(index)  # O(n) but slightly faster
+```
+
+However, for a 52-card deck, the current approach is perfectly fine.
+
+### Hangman: Set Membership
+
+```python
+if letter in st.session_state.hangman_guessed:  # O(1) lookup
+```
+
+Using a set instead of a list provides constant-time membership testing, crucial for checking guessed letters.
+
+### RPS: History Limiting
+
+```python
+for h in st.session_state.rps_history[:5]:  # Display only 5
+```
+
+Without this limit, history could grow unbounded, slowing down UI rendering.
+
+**Improvement:**
+Limit storage as well:
+```python
+st.session_state.rps_history.insert(0, msg)
+st.session_state.rps_history = st.session_state.rps_history[:10]  # Keep max 10
+```
+
+## Testing Strategies
+
+These game logic functions are highly testable:
+
+```python
+# Test Blackjack hand value
+assert hand_value(["A♠", "K♥"]) == 21
+assert hand_value(["A♠", "A♥", "9♣"]) == 21
+assert hand_value(["K♠", "Q♥", "J♣"]) == 30  # Bust
+
+# Test RPS winner
+assert get_winner("Piedra", "Tijera") == "Usuario"
+assert get_winner("Piedra", "Papel") == "Computadora"
+assert get_winner("Piedra", "Piedra") == "Empate"
+
+# Test card values
+assert card_value("A♠") == 11
+assert card_value("K♥") == 10
+assert card_value("7♣") == 7
+```
+
+These pure functions can be tested without mocking Streamlit or session state.
+
+---
+
+The game logic implementations demonstrate fundamental programming concepts: algorithms, data structures, state machines, and user interaction handling. Each game showcases different approaches to solving classic problems in an interactive web environment.

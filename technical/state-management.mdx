@@ -1,0 +1,510 @@
+---
+title: 'State Management'
+description: 'Deep dive into Streamlit session state, persistence patterns, and state management strategies across all games'
+---
+
+## Understanding Streamlit Session State
+
+Streamlit's execution model is fundamentally different from traditional web frameworks. Every user interaction triggers a complete re-execution of the entire Python script from top to bottom. Without state management, all variables would be reset on each interaction.
+
+### The Re-run Problem
+
+```python
+# ❌ This DOESN'T work in Streamlit
+score = 0
+
+if st.button("Increment"):
+    score += 1
+
+st.write(f"Score: {score}")  # Always displays 0!
+```
+
+When the button is clicked:
+1. Script re-runs from the top
+2. `score = 0` executes, resetting the variable
+3. Button click increments to 1
+4. Next interaction re-runs, back to 0
+
+### The Solution: Session State
+
+```python
+# ✅ This WORKS with session state
+if 'score' not in st.session_state:
+    st.session_state.score = 0
+
+if st.button("Increment"):
+    st.session_state.score += 1
+
+st.write(f"Score: {st.session_state.score}")  # Persists correctly!
+```
+
+`st.session_state` is a dictionary-like object that persists across re-runs for each user session. It's the cornerstone of stateful applications in Streamlit.
+
+<Note>
+Each user gets their own session state. If two users play games simultaneously, their states are completely isolated from each other.
+</Note>
+
+## State Initialization Patterns
+
+All three games follow a consistent pattern for initializing state through dedicated `init_game()` functions.
+
+### Pattern 1: Defensive Initialization
+
+```python
+def app():
+    st.header("🃏 Blackjack")
+
+    if 'deck' not in st.session_state or 'player_hand' not in st.session_state:
+        init_game()
+```
+
+This pattern checks if critical state variables exist before proceeding. If not found, it calls `init_game()` to set up the initial state.
+
+**Why check multiple variables?**
+In Blackjack, checking both `deck` and `player_hand` ensures the game is fully initialized. If only one exists, something went wrong and we should re-initialize.
+
+### Pattern 2: Single Key Check
+
+```python
+def app():
+    st.header("🔤 Ahorcado")
+
+    if 'hangman_word' not in st.session_state:
+        init_game()
+```
+
+Hangman uses a single key check. The `hangman_word` is the primary state that indicates whether the game has been initialized.
+
+### Pattern 3: Minimal Check
+
+```python
+def app():
+    st.header("✂️ Piedra, Papel o Tijeras")
+
+    if 'rps_user_score' not in st.session_state:
+        init_game()
+```
+
+Rock Paper Scissors checks for the score variable, which is always present during gameplay.
+
+## State Structure by Game
+
+Each game maintains different state variables based on its requirements.
+
+<Tabs>
+  <Tab title="Blackjack">
+    ### Blackjack State Variables
+
+    ```python
+    def init_game():
+        st.session_state.deck = deck_of_cards()           # List of remaining cards
+        st.session_state.player_hand = []                 # Player's cards
+        st.session_state.dealer_hand = []                 # Dealer's cards
+        st.session_state.game_over = False                # Game state flag
+        st.session_state.result_message = ""             # Win/loss message
+    ```
+
+    **State Breakdown:**
+
+    | Variable | Type | Purpose | Mutability |
+    |----------|------|---------|------------|
+    | `deck` | List[str] | Available cards to draw from | Modified on each draw |
+    | `player_hand` | List[str] | Player's current cards | Grows when hitting |
+    | `dealer_hand` | List[str] | Dealer's current cards | Grows during dealer's turn |
+    | `game_over` | bool | Whether the round is finished | Toggled on bust/stand |
+    | `result_message` | str | Game outcome text | Set when `game_over = True` |
+
+    <Note>
+    The deck is modified by removing cards as they're dealt. This prevents duplicate cards and maintains game integrity.
+    </Note>
+  </Tab>
+  <Tab title="Hangman">
+    ### Hangman State Variables
+
+    ```python
+    def init_game():
+        filepath = os.path.join("Hangman", "DATA", "DATA.txt")
+        words = read_words_from_file(filepath)
+        st.session_state.hangman_word = random.choice(words)  # Secret word
+        st.session_state.hangman_guessed = set()              # Guessed letters
+        st.session_state.hangman_attempts = 6                 # Remaining chances
+        st.session_state.hangman_game_over = False            # Game state
+        st.session_state.hangman_result = ""                  # Result message
+    ```
+
+    **State Breakdown:**
+
+    | Variable | Type | Purpose | Mutability |
+    |----------|------|---------|------------|
+    | `hangman_word` | str | The target word to guess | Immutable during game |
+    | `hangman_guessed` | set | Letters already guessed | Grows with each guess |
+    | `hangman_attempts` | int | Lives remaining (6 to 0) | Decrements on wrong guess |
+    | `hangman_game_over` | bool | Game finished flag | Set on win/loss |
+    | `hangman_result` | str | Win/loss message | Set at game end |
+
+    <Note>
+    Using a `set` for guessed letters is efficient for membership testing and automatically prevents duplicate entries.
+    </Note>
+
+    **Namespace Prefix:**
+    All Hangman state keys are prefixed with `hangman_` to avoid collisions with other games. This is crucial since all games share the same session state dictionary.
+  </Tab>
+  <Tab title="Rock Paper Scissors">
+    ### Rock Paper Scissors State Variables
+
+    ```python
+    def init_game():
+        st.session_state.rps_user_score = 0          # User's total wins
+        st.session_state.rps_computer_score = 0      # Computer's total wins
+        st.session_state.rps_round_result = ""       # Last round result
+        st.session_state.rps_history = []            # Match history
+    ```
+
+    **State Breakdown:**
+
+    | Variable | Type | Purpose | Mutability |
+    |----------|------|---------|------------|
+    | `rps_user_score` | int | Player's win count | Increments on win |
+    | `rps_computer_score` | int | CPU's win count | Increments on CPU win |
+    | `rps_round_result` | str | Current round outcome | Updated each round |
+    | `rps_history` | List[str] | List of past results | New results inserted at index 0 |
+
+    **Persistence Strategy:**
+    Unlike Blackjack and Hangman, RPS maintains score across multiple rounds. The score only resets when the user explicitly clicks "Reiniciar Marcador".
+  </Tab>
+</Tabs>
+
+## State Modification Patterns
+
+### Direct Assignment
+
+Simple state changes use direct assignment:
+
+```python
+# Blackjack: Mark game as over
+st.session_state.game_over = True
+
+# Hangman: Decrement attempts
+st.session_state.hangman_attempts -= 1
+
+# RPS: Set result message
+st.session_state.rps_round_result = msg
+```
+
+### List Operations
+
+Appending and removing from lists:
+
+```python
+# Blackjack: Deal a card
+card = random.choice(st.session_state.deck)
+st.session_state.deck.remove(card)              # Remove from deck
+st.session_state.player_hand.append(card)       # Add to hand
+
+# RPS: Add to history (insert at beginning)
+st.session_state.rps_history.insert(0, msg)
+```
+
+<Warning>
+When modifying collections in session state, the modifications persist because lists and sets are mutable objects. However, reassigning the variable entirely also works:
+
+```python
+# Both work:
+st.session_state.player_hand.append(card)  # ✅ In-place modification
+st.session_state.player_hand = st.session_state.player_hand + [card]  # ✅ Reassignment
+```
+</Warning>
+
+### Set Operations
+
+```python
+# Hangman: Track guessed letter
+st.session_state.hangman_guessed.add(letter)
+
+# Check membership
+if letter in st.session_state.hangman_guessed:
+    # Already guessed
+```
+
+Sets provide O(1) lookup time, making them ideal for tracking guessed letters.
+
+## Triggering Re-runs
+
+After modifying state, games often need to trigger a re-run to update the UI.
+
+### st.rerun() Usage
+
+```python
+# Blackjack: After hitting
+if st.button("Pedir Carta (Hit)"):
+    card = random.choice(st.session_state.deck)
+    st.session_state.deck.remove(card)
+    st.session_state.player_hand.append(card)
+    if hand_value(st.session_state.player_hand) > 21:
+        st.session_state.game_over = True
+        st.session_state.result_message = "👎 Te pasaste de 21. ¡Perdiste!"
+    st.rerun()  # Immediately re-run to show new card
+```
+
+```python
+# Hangman: After guessing a letter
+if cols[i % 7].button(letter, key=f"btn_{letter}"):
+    st.session_state.hangman_guessed.add(letter)
+    if letter not in st.session_state.hangman_word:
+        st.session_state.hangman_attempts -= 1
+    st.rerun()  # Re-render with updated state
+```
+
+<Note>
+`st.rerun()` immediately stops execution and re-runs the script. Code after `st.rerun()` won't execute in the current run.
+</Note>
+
+### When to Use st.rerun()
+
+**Use `st.rerun()` when:**
+- State changes need to be reflected immediately
+- You want to clear the current UI and start fresh
+- Button states need to update (like disabling guessed letters)
+
+**Don't use `st.rerun()` when:**
+- Streamlit will naturally re-run on the next interaction
+- You're just displaying state without modifying it
+
+## State Reset on New Game
+
+All games provide a "New Game" button that reinitializes state:
+
+```python
+# Common pattern across all games
+if st.button("Juego Nuevo"):
+    init_game()
+    # Note: Some games add st.rerun() here, others don't
+```
+
+<Tabs>
+  <Tab title="With st.rerun()">
+    ```python
+    # RPS resets and immediately re-renders
+    if col3.button("Reiniciar Marcador"):
+        init_game()
+        st.rerun()
+    ```
+    
+    The immediate re-run clears the previous game's UI and shows the fresh state.
+  </Tab>
+  <Tab title="Without st.rerun()">
+    ```python
+    # Blackjack and Hangman wait for next natural re-run
+    if st.button("Juego Nuevo"):
+        init_game()
+    ```
+    
+    The new game state is set, and the UI updates as the script continues executing. This works because the button click itself triggers a re-run.
+  </Tab>
+</Tabs>
+
+## Complex State Logic: Hangman Example
+
+### Dynamic UI Based on State
+
+```python
+# Display word with underscores
+display_word = []
+won = True
+for char in st.session_state.hangman_word:
+    if char in st.session_state.hangman_guessed:
+        display_word.append(char)
+    else:
+        display_word.append("_")
+        won = False
+
+st.markdown(f"## {' '.join(display_word)}")
+```
+
+This code:
+1. Iterates through the secret word
+2. Shows guessed letters, hides others
+3. Determines win condition by checking if all letters are revealed
+
+### State-Dependent Win Detection
+
+```python
+if won and not st.session_state.hangman_game_over:
+    st.session_state.hangman_result = "¡Felicidades! Ganaste."
+    st.session_state.hangman_game_over = True
+
+if st.session_state.hangman_attempts <= 0 and not st.session_state.hangman_game_over:
+    st.session_state.hangman_result = f"Perdiste. La palabra era: {st.session_state.hangman_word}"
+    st.session_state.hangman_game_over = True
+```
+
+**Why check `not st.session_state.hangman_game_over`?**
+
+This prevents the win/loss logic from executing multiple times on subsequent re-runs. Once the game is over, these conditions are skipped.
+
+### Conditional Button Rendering
+
+```python
+for i, letter in enumerate(alphabet):
+    if letter not in st.session_state.hangman_guessed:
+        if cols[i % 7].button(letter, key=f"btn_{letter}"):
+            st.session_state.hangman_guessed.add(letter)
+            if letter not in st.session_state.hangman_word:
+                st.session_state.hangman_attempts -= 1
+            st.rerun()
+    else:
+        cols[i % 7].button(" ", disabled=True, key=f"btn_{letter}_dis")
+```
+
+This creates dynamic buttons that:
+- Show active letters that haven't been guessed
+- Show disabled (blank) buttons for guessed letters
+- Use unique keys for each button state to avoid Streamlit key collisions
+
+## Common Pitfalls and Solutions
+
+### Pitfall 1: Forgetting to Initialize State
+
+```python
+# ❌ This will crash if state doesn't exist
+st.write(st.session_state.score)
+
+# ✅ Always check first
+if 'score' not in st.session_state:
+    st.session_state.score = 0
+st.write(st.session_state.score)
+```
+
+### Pitfall 2: State Key Collisions
+
+```python
+# ❌ Two games both use 'score'
+st.session_state.score = 10  # Which game's score?
+
+# ✅ Use namespaced keys
+st.session_state.blackjack_score = 10
+st.session_state.rps_score = 5
+```
+
+Notice how each game in Python Arcade Suite uses prefixes: `hangman_*`, `rps_*`, etc.
+
+### Pitfall 3: Mutating State Without Assignment
+
+```python
+# This works, but can be confusing
+hand = st.session_state.player_hand
+hand.append(card)  # Modifies session state because lists are mutable
+
+# This is clearer
+st.session_state.player_hand.append(card)
+```
+
+### Pitfall 4: Over-using st.rerun()
+
+```python
+# ❌ Unnecessary rerun
+if st.button("Update"):
+    st.session_state.value = 10
+    st.rerun()  # Not needed - button click already triggers rerun
+
+st.write(st.session_state.value)  # This line won't execute after st.rerun()
+```
+
+<Warning>
+`st.rerun()` stops execution immediately. Any code after it won't run. Only use it when you need an immediate refresh, not at the end of event handlers.
+</Warning>
+
+## State Persistence Across Interactions
+
+### Short-lived State (Single Round)
+
+Blackjack's `game_over` and `result_message` reset with each new game:
+
+```python
+def init_game():
+    # ... deal cards ...
+    st.session_state.game_over = False
+    st.session_state.result_message = ""
+```
+
+### Long-lived State (Multi-Round)
+
+RPS maintains score across multiple rounds:
+
+```python
+# Score persists until explicit reset
+if result == "Usuario":
+    st.session_state.rps_user_score += 1
+
+# Only reset when user clicks button
+if col3.button("Reiniciar Marcador"):
+    init_game()
+```
+
+## Best Practices
+
+1. **Always Check Before Access**: Never assume state exists
+   ```python
+   if 'key' not in st.session_state:
+       st.session_state.key = default_value
+   ```
+
+2. **Use Namespaced Keys**: Prefix keys with game name
+   ```python
+   st.session_state.blackjack_score  # Good
+   st.session_state.score            # Risky
+   ```
+
+3. **Initialize in Dedicated Functions**: Use `init_game()` pattern
+   ```python
+   def init_game():
+       # All initialization logic here
+   ```
+
+4. **Be Explicit with State Modifications**: Make changes obvious
+   ```python
+   st.session_state.score += 1  # Clear
+   s = st.session_state.score + 1
+   st.session_state.score = s   # Also clear
+   ```
+
+5. **Use Appropriate Data Structures**:
+   - Lists for ordered collections (hands, history)
+   - Sets for membership testing (guessed letters)
+   - Booleans for flags (game_over)
+   - Strings for messages (result_message)
+
+## State Management Flow Example
+
+Let's trace a complete Blackjack interaction:
+
+```python
+# First visit:
+1. Script runs, checks if 'deck' exists → No
+2. Calls init_game(), creates initial state
+3. Renders UI with 2 cards for player and dealer
+4. Waits for interaction
+
+# User clicks "Hit":
+5. Script re-runs from top
+6. Checks if 'deck' exists → Yes, skips init
+7. Renders UI (same layout)
+8. Button callback executes:
+   - Draw card from deck
+   - Add to player_hand
+   - Check if bust
+9. st.rerun() triggered
+10. Script re-runs again, shows new card
+
+# User clicks "New Game":
+11. Script re-runs
+12. Button callback executes: init_game()
+13. All state reset to fresh values
+14. Script continues, renders fresh game
+```
+
+Every interaction follows this cycle: re-run → check state → render UI → handle input → modify state → (optional) re-run.
+
+<Note>
+Mastering session state is essential for building Streamlit applications. The games in Python Arcade Suite demonstrate practical patterns you can apply to any stateful Streamlit app.
+</Note>

@@ -1,0 +1,255 @@
+---
+title: 'Blackjack'
+description: 'Classic card game - get as close to 21 as possible without going over'
+icon: 'diamond'
+---
+
+## Overview
+
+Blackjack is a classic casino card game where you compete against the dealer to get a hand value as close to 21 as possible without exceeding it. The game uses a standard 52-card deck with strategic decisions around hitting (taking another card) or standing (keeping your current hand).
+
+<Note>
+  The interface displays in Spanish ("Juego Nuevo", "Pedir Carta", "Plantarse") for an authentic casino experience!
+</Note>
+
+## How to Play
+
+### Game Rules
+
+1. **Card Values**:
+   - Number cards (2-10): Face value
+   - Face cards (J, Q, K): Worth 10 points
+   - Aces: Worth 11 points (or 1 if 11 would bust)
+
+2. **Initial Deal**: Both you and the dealer receive 2 cards. You can see both your cards and one dealer card.
+
+3. **Your Turn**:
+   - **Hit** (Pedir Carta): Take another card
+   - **Stand** (Plantarse): Keep your current hand
+
+4. **Winning Conditions**:
+   - Get closer to 21 than the dealer without going over
+   - Dealer busts (goes over 21)
+   - Get exactly 21
+
+5. **Losing Conditions**:
+   - Your hand exceeds 21 (bust)
+   - Dealer's hand is closer to 21 than yours
+
+### Game Interface
+
+The game displays:
+- **Your Hand**: All your cards and current score
+- **Dealer's Hand**: One visible card until the round ends
+- **Action Buttons**: Hit or Stand options
+- **Game Result**: Win/loss message with appropriate emoji
+
+## Implementation Details
+
+### Core Functions
+
+#### Creating the Deck
+
+The game uses a standard 52-card deck with all four suits:
+
+```python streamlit_game.py:4
+def deck_of_cards():
+    DoC = []
+    numbers = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+    suits = ["♣", "♠", "♥", "♦"]
+    for suit in suits:
+        for number in numbers:
+            card = f"{number}{suit}"
+            DoC.append(card)
+    return DoC
+```
+
+This creates a list of 52 cards combining each number/face with each suit symbol.
+
+#### Calculating Card Values
+
+Each card has a specific point value:
+
+```python streamlit_game.py:14
+def card_value(card):
+    if card[:-1] in ['K', 'Q', 'J', '10']:
+        return 10
+    elif card[0] == 'A':
+        return 11
+    else:
+        return int(card[:-1])
+```
+
+<Tip>
+  The function extracts the card's rank by removing the last character (the suit symbol).
+</Tip>
+
+#### Hand Value with Ace Adjustment
+
+The most critical logic handles Aces intelligently:
+
+```python streamlit_game.py:22
+def hand_value(hand):
+    value = sum(card_value(card) for card in hand)
+    num_aces = sum(1 for card in hand if card[0] == 'A')
+    while value > 21 and num_aces:
+        value -= 10
+        num_aces -= 1
+    return value
+```
+
+**How it works**:
+1. Calculate total value (Aces count as 11 initially)
+2. Count the number of Aces in the hand
+3. If total > 21 and there are Aces, convert each Ace from 11 to 1 (by subtracting 10)
+4. Repeat until hand is ≤21 or no more Aces to convert
+
+<Accordion title="Example: Ace Conversion">
+  **Scenario**: You have A♠, A♥, 9♣
+  
+  - Initial value: 11 + 11 + 9 = 31 (bust!)
+  - Aces present: 2
+  - First adjustment: 31 - 10 = 21 (one Ace now counts as 1)
+  - Result: 21 (perfect!)
+  
+  The hand becomes: 1 + 11 + 9 = 21
+</Accordion>
+
+### Game Initialization
+
+When starting a new game:
+
+```python streamlit_game.py:30
+def init_game():
+    st.session_state.deck = deck_of_cards()
+    st.session_state.player_hand = []
+    st.session_state.dealer_hand = []
+    
+    # Initial deal
+    for _ in range(2):
+        card = random.choice(st.session_state.deck)
+        st.session_state.deck.remove(card)
+        st.session_state.player_hand.append(card)
+        
+        card = random.choice(st.session_state.deck)
+        st.session_state.deck.remove(card)
+        st.session_state.dealer_hand.append(card)
+    
+    st.session_state.game_over = False
+    st.session_state.result_message = ""
+```
+
+This function:
+- Creates a fresh deck
+- Deals 2 cards to player and dealer
+- Removes dealt cards from the deck
+- Resets game state flags
+
+### Hit Logic
+
+When the player requests another card:
+
+```python streamlit_game.py:82
+if st.button("Pedir Carta (Hit)"):
+    card = random.choice(st.session_state.deck)
+    st.session_state.deck.remove(card)
+    st.session_state.player_hand.append(card)
+    if hand_value(st.session_state.player_hand) > 21:
+        st.session_state.game_over = True
+        st.session_state.result_message = "👎 Te pasaste de 21. ¡Perdiste!"
+    st.rerun()
+```
+
+### Stand Logic & Dealer Play
+
+When the player stands, the dealer must play by house rules (hit until 17+):
+
+```python streamlit_game.py:92
+if st.button("Plantarse (Stand)"):
+    # Dealer plays
+    while hand_value(st.session_state.dealer_hand) < 17:
+        card = random.choice(st.session_state.deck)
+        st.session_state.deck.remove(card)
+        st.session_state.dealer_hand.append(card)
+    
+    player_final = hand_value(st.session_state.player_hand)
+    dealer_final = hand_value(st.session_state.dealer_hand)
+    
+    st.session_state.game_over = True
+    
+    if dealer_final > 21:
+        st.session_state.result_message = "👍 El crupier se pasó. ¡Ganaste!"
+    elif player_final > dealer_final:
+        st.session_state.result_message = "🏆 ¡Ganaste!"
+    elif player_final < dealer_final:
+        st.session_state.result_message = "💀 Perdiste."
+    else:
+        st.session_state.result_message = "🤝 Empate."
+    st.rerun()
+```
+
+<Note>
+  The dealer MUST hit if their hand is below 17. This is standard casino blackjack rules.
+</Note>
+
+## Tips & Strategy
+
+<Accordion title="Basic Strategy Tips">
+  1. **Always hit on 11 or less** - You can't bust, and you might improve your hand
+  2. **Stand on 17 or higher** - Risk of busting is too high
+  3. **Be cautious with 12-16** - This is the "danger zone" where decisions matter most
+  4. **Watch the dealer's visible card** - If it's low (2-6), they're more likely to bust
+</Accordion>
+
+<Accordion title="Understanding Probabilities">
+  - There are more 10-value cards than any other value (16 out of 52)
+  - Assume the dealer's hidden card is worth 10
+  - If dealer shows 6 or less, they have a higher chance of busting
+</Accordion>
+
+<Accordion title="Common Mistakes to Avoid">
+  - **Hitting on 17+**: Almost always leads to a bust
+  - **Not considering Aces**: Remember they can be worth 1 or 11
+  - **Playing scared**: Sometimes you need to take risks on 12-14
+</Accordion>
+
+## Session State Management
+
+The game uses Streamlit's session state to persist data:
+
+| Variable | Purpose |
+|----------|----------|
+| `deck` | Remaining cards in the deck |
+| `player_hand` | List of player's cards |
+| `dealer_hand` | List of dealer's cards |
+| `game_over` | Boolean flag for game completion |
+| `result_message` | Win/loss/tie message |
+
+<Tip>
+  The deck shrinks as cards are dealt, ensuring no card appears twice in a single game!
+</Tip>
+
+## UI Components
+
+The interface uses Streamlit columns for side-by-side display:
+
+```python streamlit_game.py:61
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("Tu Mano")
+    st.write(f"Cartas: {', '.join(st.session_state.player_hand)}")
+    st.write(f"Puntaje: {player_score}")
+
+with col2:
+    st.subheader("Mano del Crupier")
+    if st.session_state.game_over:
+        dealer_score = hand_value(st.session_state.dealer_hand)
+        st.write(f"Cartas: {', '.join(st.session_state.dealer_hand)}")
+        st.write(f"Puntaje: {dealer_score}")
+    else:
+        st.write(f"Cartas: {st.session_state.dealer_hand[0]}, 🂠")
+        st.write("Puntaje: ?")
+```
+
+The dealer's second card remains hidden (🂠) until the game ends!

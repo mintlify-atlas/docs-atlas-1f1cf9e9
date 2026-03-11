@@ -1,0 +1,442 @@
+---
+title: 'Streamlit Cloud Deployment'
+description: 'Deploy Python Arcade Suite to Streamlit Cloud for production hosting'
+icon: 'cloud'
+---
+
+Deploy your Python Arcade Suite to Streamlit Cloud for free, production-ready hosting with automatic CI/CD from GitHub.
+
+## Overview
+
+Streamlit Cloud is a platform specifically designed for deploying Streamlit applications. It offers:
+
+<CardGroup cols={2}>
+  <Card title="Free Hosting" icon="gift">
+    Host public apps at no cost
+  </Card>
+  <Card title="Automatic CI/CD" icon="rotate">
+    Deploy automatically from GitHub commits
+  </Card>
+  <Card title="Easy Setup" icon="bolt">
+    No server configuration required
+  </Card>
+  <Card title="Built-in Monitoring" icon="chart-line">
+    Access logs and performance metrics
+  </Card>
+</CardGroup>
+
+<Info>
+  The live demo of Python Arcade Suite is hosted at: [https://simplegames-46v2swaudmtbld5233dwbp.streamlit.app/](https://simplegames-46v2swaudmtbld5233dwbp.streamlit.app/)
+</Info>
+
+## Prerequisites
+
+Before deploying to Streamlit Cloud, you'll need:
+
+<Steps>
+  <Step title="GitHub Account">
+    Create a free account at [github.com](https://github.com) if you don't have one.
+  </Step>
+  
+  <Step title="Streamlit Cloud Account">
+    Sign up for free at [share.streamlit.io](https://share.streamlit.io) using your GitHub account.
+  </Step>
+  
+  <Step title="Repository Access">
+    Either fork the [Python Arcade repository](https://github.com/YorberR/Python_Arcade.git) or push your own version to GitHub.
+  </Step>
+</Steps>
+
+<Warning>
+  Your GitHub repository must be public for Streamlit Cloud's free tier, or you'll need a Streamlit Cloud Teams account for private repositories.
+</Warning>
+
+## Deployment Process
+
+<Steps>
+  <Step title="Prepare Your Repository">
+    Ensure your GitHub repository has the required files:
+    
+    - `streamlit_app.py` (main application file)
+    - `requirements.txt` (Python dependencies)
+    - All game modules (`blackjack/`, `Hangman/`, `Rock_paper_or_scissors/`)
+    
+    <Note>
+      The entry point must be named `streamlit_app.py` or you'll need to specify a different filename during deployment.
+    </Note>
+  </Step>
+
+  <Step title="Sign In to Streamlit Cloud">
+    1. Navigate to [share.streamlit.io](https://share.streamlit.io)
+    2. Click **"Sign in with GitHub"**
+    3. Authorize Streamlit to access your GitHub repositories
+    
+    <Info>
+      Streamlit Cloud needs repository access to pull your code and set up automatic deployments.
+    </Info>
+  </Step>
+
+  <Step title="Create a New App">
+    1. Click **"New app"** from your Streamlit Cloud dashboard
+    2. Select your deployment method:
+       - **From existing repo**: Use code already on GitHub
+       - **Start from template**: Begin with a sample app
+    
+    For Python Arcade Suite, choose **"From existing repo"**.
+  </Step>
+
+  <Step title="Configure Deployment Settings">
+    Fill in the deployment configuration:
+    
+    - **Repository**: Select your Python Arcade repository
+    - **Branch**: Choose `main` or your preferred branch
+    - **Main file path**: Enter `streamlit_app.py`
+    
+    ```
+    Repository: your-username/Python_Arcade
+    Branch: main
+    Main file path: streamlit_app.py
+    ```
+    
+    <Info>
+      You can optionally set a custom subdomain under **Advanced settings**.
+    </Info>
+  </Step>
+
+  <Step title="Advanced Configuration (Optional)">
+    Click **"Advanced settings"** to configure:
+    
+    - **Python version**: Specify version (default is 3.9)
+    - **Environment variables**: Add secrets or config values
+    - **Custom domain**: Use your own domain name (Teams plan)
+    
+    For Python Arcade Suite, the default settings work perfectly.
+  </Step>
+
+  <Step title="Deploy the App">
+    1. Click **"Deploy!"**
+    2. Streamlit Cloud will:
+       - Clone your repository
+       - Install dependencies from `requirements.txt`
+       - Launch your application
+    
+    The deployment typically takes 2-5 minutes.
+    
+    <Note>
+      You can watch the build logs in real-time during deployment.
+    </Note>
+  </Step>
+
+  <Step title="Access Your Live App">
+    Once deployment completes, you'll receive a URL like:
+    
+    ```
+    https://your-app-name-random-id.streamlit.app/
+    ```
+    
+    Share this URL with anyone - your app is now live!
+  </Step>
+</Steps>
+
+## Configuration Requirements
+
+### requirements.txt
+
+Your `requirements.txt` must list all Python dependencies:
+
+```txt
+streamlit
+```
+
+<Warning>
+  If you add new dependencies locally, update `requirements.txt` using:
+  ```bash
+  pip freeze > requirements.txt
+  ```
+  However, it's often better to manually curate this file to include only direct dependencies.
+</Warning>
+
+### Repository Structure
+
+Ensure your repository maintains this structure:
+
+```
+Python_Arcade/
+├── streamlit_app.py          # Required: Main entry point
+├── requirements.txt          # Required: Dependencies
+├── README.md                 # Recommended: Project documentation
+├── blackjack/
+│   └── streamlit_game.py
+├── Hangman/
+│   └── streamlit_game.py
+└── Rock_paper_or_scissors/
+    └── streamlit_game.py
+```
+
+### Optional: Streamlit Configuration
+
+Create `.streamlit/config.toml` for custom settings:
+
+```toml
+[theme]
+primaryColor = "#FF4B4B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+font = "sans serif"
+
+[server]
+headless = true
+enableCORS = false
+port = 8501
+```
+
+## Continuous Deployment (CI/CD)
+
+Streamlit Cloud automatically redeploys your app when you push changes to GitHub:
+
+<Steps>
+  <Step title="Make Changes Locally">
+    Edit your code on your local machine and test thoroughly.
+  </Step>
+  
+  <Step title="Commit and Push">
+    ```bash
+    git add .
+    git commit -m "Add new game feature"
+    git push origin main
+    ```
+  </Step>
+  
+  <Step title="Automatic Deployment">
+    Streamlit Cloud detects the push and automatically:
+    - Pulls the latest code
+    - Reinstalls dependencies if `requirements.txt` changed
+    - Restarts the application
+    
+    <Info>
+      Deployments typically complete within 2-3 minutes.
+    </Info>
+  </Step>
+  
+  <Step title="Verify Changes">
+    Visit your app URL to confirm the updates are live.
+  </Step>
+</Steps>
+
+<Note>
+  Active users will see a brief "Reconnecting" message during redeployment.
+</Note>
+
+## Monitoring and Logs
+
+### Accessing Logs
+
+1. Go to your [Streamlit Cloud dashboard](https://share.streamlit.io)
+2. Click on your app
+3. Select the **"Logs"** tab
+
+Logs display:
+- Application startup messages
+- Print statements and errors
+- Streamlit system messages
+- Deployment events
+
+<Info>
+  Logs are retained for the current session only. For persistent logging, consider external services.
+</Info>
+
+### App Analytics
+
+Streamlit Cloud provides basic analytics:
+
+- **Viewer count**: Number of active viewers
+- **Resource usage**: CPU and memory consumption
+- **Uptime**: App availability status
+
+Access analytics from your app's dashboard page.
+
+### Health Checks
+
+Streamlit Cloud automatically monitors:
+- App responsiveness
+- Error rates
+- Resource limits
+
+<Warning>
+  Apps on the free tier have resource limits. If your app exceeds limits, it may temporarily shut down.
+</Warning>
+
+## Updating Your Deployment
+
+### Manual Reboot
+
+If your app isn't responding:
+
+1. Go to your app's dashboard
+2. Click the **"⋮" menu** (three dots)
+3. Select **"Reboot app"**
+
+### Changing Settings
+
+To modify deployment settings:
+
+1. Click **"Settings"** from your app dashboard
+2. Update configuration (branch, Python version, etc.)
+3. Click **"Save"** - the app will redeploy automatically
+
+### Rolling Back Changes
+
+To revert to a previous version:
+
+```bash
+# Find the commit you want to revert to
+git log --oneline
+
+# Revert to that commit
+git revert <commit-hash>
+git push origin main
+```
+
+Streamlit Cloud will automatically deploy the reverted version.
+
+## Custom Domains (Teams Plan)
+
+While the free tier provides a `*.streamlit.app` subdomain, Teams plan users can configure custom domains:
+
+1. Navigate to **Settings** → **Domain**
+2. Enter your custom domain (e.g., `arcade.yourdomain.com`)
+3. Add the provided CNAME record to your DNS settings
+4. Wait for DNS propagation (up to 48 hours)
+
+<Note>
+  Custom domains require a Streamlit Cloud Teams subscription.
+</Note>
+
+## Resource Limits
+
+Streamlit Cloud free tier has the following limits:
+
+| Resource | Limit |
+|----------|-------|
+| **CPU** | 1 core (shared) |
+| **Memory** | 1 GB RAM |
+| **Storage** | Limited to app size |
+| **Apps** | Unlimited public apps |
+
+<Warning>
+  Apps that consistently exceed resource limits may be throttled or suspended.
+</Warning>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Optimize Performance" icon="gauge-high">
+    Use `@st.cache_data` and `@st.cache_resource` to reduce computation
+  </Card>
+  
+  <Card title="Handle Secrets Securely" icon="lock">
+    Store API keys in Streamlit Cloud secrets, not in code
+  </Card>
+  
+  <Card title="Test Before Pushing" icon="flask">
+    Always test changes locally before deploying
+  </Card>
+  
+  <Card title="Monitor Logs" icon="magnifying-glass">
+    Regularly check logs for errors and warnings
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Deployment Failed
+
+**Problem:** App fails to deploy with errors
+
+**Solutions:**
+- Check build logs for specific error messages
+- Verify `requirements.txt` has all dependencies
+- Ensure Python version compatibility
+- Check for syntax errors in code
+
+### App Running Slowly
+
+**Problem:** App is slow or unresponsive
+
+**Solutions:**
+- Implement caching with `@st.cache_data`
+- Reduce computational complexity
+- Optimize session state usage
+- Consider upgrading to a Teams plan for more resources
+
+### Module Import Errors
+
+**Problem:** `ModuleNotFoundError` in production
+
+**Solutions:**
+```bash
+# Add missing dependency to requirements.txt
+echo "missing-package" >> requirements.txt
+git add requirements.txt
+git commit -m "Add missing dependency"
+git push
+```
+
+### App Goes to Sleep
+
+**Problem:** App becomes inactive after no usage
+
+**Solutions:**
+- Free tier apps sleep after inactivity (expected behavior)
+- App wakes automatically when accessed
+- Upgrade to Teams plan for always-on apps
+
+## Security Considerations
+
+<Warning>
+  Never commit sensitive information (API keys, passwords, tokens) to your repository.
+</Warning>
+
+### Using Secrets
+
+For sensitive configuration:
+
+1. Go to app **Settings** → **Secrets**
+2. Add secrets in TOML format:
+   ```toml
+   api_key = "your-secret-key"
+   database_url = "your-connection-string"
+   ```
+3. Access in code:
+   ```python
+   import streamlit as st
+   api_key = st.secrets["api_key"]
+   ```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Local Development" icon="laptop-code" href="/deployment/local">
+    Set up local development environment
+  </Card>
+  
+  <Card title="Streamlit Docs" icon="book" href="https://docs.streamlit.io">
+    Explore Streamlit's documentation
+  </Card>
+  
+  <Card title="Streamlit Cloud" icon="cloud" href="https://streamlit.io/cloud">
+    Learn more about Streamlit Cloud features
+  </Card>
+  
+  <Card title="Community Forum" icon="comments" href="https://discuss.streamlit.io">
+    Get help from the Streamlit community
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- [Streamlit Cloud Documentation](https://docs.streamlit.io/streamlit-community-cloud)
+- [Deployment Tutorial](https://docs.streamlit.io/streamlit-community-cloud/get-started)
+- [Resource Limits Guide](https://docs.streamlit.io/streamlit-community-cloud/manage-your-app/resource-limits)
+- [GitHub Actions for Testing](https://docs.github.com/en/actions)

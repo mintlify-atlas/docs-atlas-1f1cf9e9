@@ -1,0 +1,385 @@
+---
+title: 'Rock Paper Scissors'
+description: 'Classic hand game - challenge the computer and track your wins'
+icon: 'hand-scissors'
+---
+
+## Overview
+
+Rock Paper Scissors (Piedra, Papel o Tijeras) is a timeless game of chance where you compete against the computer. Make your choice and see if you can outsmart the AI! The game tracks your score across multiple rounds and maintains a complete match history.
+
+<Note>
+  This implementation includes balloons animation when you win - celebrate your victories! 🎉
+</Note>
+
+## How to Play
+
+### Game Rules
+
+The classic triangle of victory:
+
+- 🪨 **Rock beats Scissors** (Rock crushes scissors)
+- ✂️ **Scissors beats Paper** (Scissors cut paper)
+- 📄 **Paper beats Rock** (Paper covers rock)
+- **Same choice = Tie**
+
+### Game Interface
+
+The game displays:
+
+**Scoreboard**:
+- Your wins counter
+- Computer wins counter  
+- Reset button to start fresh
+
+**Action Buttons**:
+- Three large, emoji-labeled buttons for Rock, Paper, and Scissors
+- Instant result display
+
+**Match History**:
+- Last 5 rounds displayed
+- Shows your choice vs computer choice
+- Result of each round
+
+## Implementation Details
+
+### Core Game Logic
+
+The winner determination is handled by a simple but effective function:
+
+```python streamlit_game.py:4
+def get_winner(user, computer):
+    if user == computer:
+        return "Empate"
+    elif (user == "Piedra" and computer == "Tijera") or \
+         (user == "Papel" and computer == "Piedra") or \
+         (user == "Tijera" and computer == "Papel"):
+        return "Usuario"
+    else:
+        return "Computadora"
+```
+
+**How it works**:
+1. Check if both choices are identical → Tie
+2. Check all three winning combinations for the user
+3. If none match → Computer wins
+
+<Accordion title="Why This Logic Works">
+  The function covers all 9 possible outcomes:
+  
+  | User | Computer | Result |
+  |------|----------|--------|
+  | Rock | Rock | Tie |
+  | Rock | Paper | Computer |
+  | Rock | Scissors | User |
+  | Paper | Rock | User |
+  | Paper | Paper | Tie |
+  | Paper | Scissors | Computer |
+  | Scissors | Rock | Computer |
+  | Scissors | Paper | User |
+  | Scissors | Scissors | Tie |
+  
+  By checking the 3 user-win conditions, we implicitly handle the 3 computer-win conditions in the else clause!
+</Accordion>
+
+### Game Initialization
+
+```python streamlit_game.py:14
+def init_game():
+    st.session_state.rps_user_score = 0
+    st.session_state.rps_computer_score = 0
+    st.session_state.rps_round_result = ""
+    st.session_state.rps_history = []
+```
+
+**Session state variables**:
+- `rps_user_score`: Your win count
+- `rps_computer_score`: Computer's win count
+- `rps_round_result`: Latest round outcome message
+- `rps_history`: List of all round results (newest first)
+
+<Tip>
+  The `rps_` prefix prevents naming conflicts with other games in the same Streamlit app!
+</Tip>
+
+### Scoreboard Display
+
+Metrics provide a clean, professional look:
+
+```python streamlit_game.py:26
+col1, col2, col3 = st.columns(3)
+col1.metric("Tus Victorias", st.session_state.rps_user_score)
+col2.metric("Victorias CPU", st.session_state.rps_computer_score)
+if col3.button("Reiniciar Marcador"):
+    init_game()
+    st.rerun()
+```
+
+**Three-column layout**:
+- **Column 1**: User score with Streamlit metric widget
+- **Column 2**: Computer score with metric widget
+- **Column 3**: Reset button
+
+### Interactive Button Grid
+
+Large, emoji-enhanced buttons make choices clear:
+
+```python streamlit_game.py:36
+st.subheader("Elige tu jugada:")
+bp1, bp2, bp3 = st.columns(3)
+
+user_choice = None
+if bp1.button("🪨 Piedra", use_container_width=True):
+    user_choice = "Piedra"
+if bp2.button("📄 Papel", use_container_width=True):
+    user_choice = "Papel"
+if bp3.button("✂️ Tijera", use_container_width=True):
+    user_choice = "Tijera"
+```
+
+**Key parameter**: `use_container_width=True` makes buttons expand to fill their column, creating a visually appealing grid.
+
+### Round Processing
+
+When a choice is made:
+
+```python streamlit_game.py:46
+if user_choice:
+    options = ["Piedra", "Papel", "Tijera"]
+    computer_choice = random.choice(options)
+    
+    result = get_winner(user_choice, computer_choice)
+    
+    msg = f"Tú: {user_choice} vs CPU: {computer_choice} -> "
+    if result == "Usuario":
+        st.session_state.rps_user_score += 1
+        msg += "¡Ganaste! 🎉"
+        st.balloons()
+    elif result == "Computadora":
+        st.session_state.rps_computer_score += 1
+        msg += "Perdiste. 🤖"
+    else:
+        msg += "Empate. 🤝"
+        
+    st.session_state.rps_round_result = msg
+    st.session_state.rps_history.insert(0, msg)
+```
+
+**Process flow**:
+1. Computer randomly selects from three options
+2. Determine winner using `get_winner()`
+3. Build result message with both choices
+4. Update appropriate score counter
+5. Add special effects (balloons for user win)
+6. Store result in history (insert at position 0 for newest-first)
+
+<Note>
+  `st.balloons()` is a fun Streamlit feature that displays falling balloons animation - perfect for celebrations!
+</Note>
+
+### History Display
+
+Recent matches are shown below the game:
+
+```python streamlit_game.py:69
+if st.session_state.rps_history:
+    st.subheader("Historial")
+    for h in st.session_state.rps_history[:5]:
+        st.text(h)
+```
+
+**Features**:
+- Only shows last 5 rounds (`:5` slice)
+- Newest rounds appear at the top
+- Simple text format for quick scanning
+
+<Accordion title="Example History">
+  ```
+  Historial
+  Tú: Piedra vs CPU: Tijera -> ¡Ganaste! 🎉
+  Tú: Papel vs CPU: Papel -> Empate. 🤝
+  Tú: Tijera vs CPU: Piedra -> Perdiste. 🤖
+  Tú: Piedra vs CPU: Papel -> Perdiste. 🤖
+  Tú: Papel vs CPU: Piedra -> ¡Ganaste! 🎉
+  ```
+</Accordion>
+
+## Tips & Strategy
+
+<Accordion title="Is There a Winning Strategy?">
+  Against a truly random computer opponent, **all choices are equally likely to win**. The game is pure chance with:
+  - 33.3% chance to win
+  - 33.3% chance to lose
+  - 33.3% chance to tie
+  
+  However, you can make it more interesting by:
+  - Tracking patterns (though this computer is random)
+  - Setting win goals (first to 5, first to 10)
+  - Playing best-of series
+</Accordion>
+
+<Accordion title="Common Psychological Patterns">
+  Against human opponents, players often:
+  - **Open with Rock** (most common first choice)
+  - **Avoid repeating** after a loss
+  - **Stick with winners** (repeat winning choices)
+  
+  This computer opponent doesn't follow these patterns - it's purely random!
+</Accordion>
+
+<Accordion title="Making It Competitive">
+  Set challenges for yourself:
+  - Can you win 3 games before losing 3?
+  - Can you maintain a winning record over 20 rounds?
+  - Track your long-term win rate (should approach 33%)
+  - Speed challenge: How many wins in 2 minutes?
+</Accordion>
+
+## Code Architecture
+
+### Session State Management
+
+| Variable | Type | Purpose |
+|----------|------|----------|
+| `rps_user_score` | int | Cumulative user wins |
+| `rps_computer_score` | int | Cumulative computer wins |
+| `rps_round_result` | str | Most recent round message |
+| `rps_history` | list | All round results (newest first) |
+
+### Randomness Source
+
+The computer's choice uses Python's `random` module:
+
+```python streamlit_game.py:48
+options = ["Piedra", "Papel", "Tijera"]
+computer_choice = random.choice(options)
+```
+
+`random.choice()` provides uniform distribution - each option has exactly 1/3 probability.
+
+<Tip>
+  The computer doesn't "learn" or adapt. Each round is independent with fresh randomness!
+</Tip>
+
+## UI Components Breakdown
+
+### Metric Widgets
+
+Streamlit's metric component provides clean score display:
+
+```python
+col.metric("Label", value)
+```
+
+**Benefits**:
+- Large, prominent numbers
+- Built-in styling
+- Professional appearance
+- Optional delta indicators (not used here)
+
+### Success/Error Messages
+
+The result is displayed with appropriate styling:
+
+```python streamlit_game.py:66
+if st.session_state.rps_round_result:
+    st.success(st.session_state.rps_round_result)
+```
+
+**All results use success** (green) style since the message includes emojis that indicate win/loss/tie. Alternative approach could be:
+- `st.success()` for wins
+- `st.error()` for losses  
+- `st.info()` for ties
+
+### Dividers
+
+Visual separation improves readability:
+
+```python streamlit_game.py:33
+st.divider()
+```
+
+Creates a horizontal line between scoreboard and action buttons.
+
+## Game Flow Diagram
+
+```
+App Load
+    ↓
+Check session state → Initialize if needed
+    ↓
+Display scoreboard [User: 0] [CPU: 0] [Reset]
+    ↓
+Display buttons [🪨 Piedra] [📄 Papel] [✂️ Tijera]
+    ↓
+User clicks button → Set user_choice
+    ↓
+Computer makes random choice
+    ↓
+Compare choices → Determine winner
+    ↓
+    ├─ User wins → +1 to user_score → Show balloons
+    ├─ CPU wins → +1 to computer_score
+    └─ Tie → No score change
+    ↓
+Update history → Display result
+    ↓
+Show last 5 rounds from history
+```
+
+## Enhancements & Variations
+
+<Accordion title="Best of X Series">
+  Add a match system:
+  ```python
+  if st.session_state.rps_user_score == 5:
+      st.balloons()
+      st.success("¡Ganaste la serie! (Primero a 5)")
+  elif st.session_state.rps_computer_score == 5:
+      st.error("La computadora ganó la serie.")
+  ```
+</Accordion>
+
+<Accordion title="Add Rock-Paper-Scissors-Lizard-Spock">
+  Expand to 5 choices (popularized by The Big Bang Theory):
+  - Rock crushes Scissors and Lizard
+  - Paper covers Rock and disproves Spock
+  - Scissors cuts Paper and decapitates Lizard
+  - Lizard eats Paper and poisons Spock
+  - Spock vaporizes Rock and smashes Scissors
+</Accordion>
+
+<Accordion title="Statistics Dashboard">
+  Track additional metrics:
+  - Win percentage
+  - Most used choice
+  - Current win/loss streak
+  - Choice distribution chart
+  
+  ```python
+  win_rate = (user_score / (user_score + computer_score)) * 100
+  st.metric("Win Rate", f"{win_rate:.1f}%")
+  ```
+</Accordion>
+
+<Accordion title="Difficulty Modes">
+  Create different AI behaviors:
+  - **Easy**: Computer favors losing choices
+  - **Normal**: Pure random (current)
+  - **Hard**: Computer favors winning choices against player's most-used option
+  - **Psychic**: Computer analyzes player patterns
+</Accordion>
+
+## Fun Facts
+
+<Note>
+  Rock Paper Scissors has been used to settle:
+  - A $20 million art auction (Sotheby's vs Christie's)
+  - Court custody disputes
+  - Business partnership decisions
+  - Professional sports coin toss alternatives
+</Note>
+
+<Tip>
+  In competitive RPS tournaments, top players actually study patterns and psychology extensively. The game has surprising depth at elite levels!
+</Tip>

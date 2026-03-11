@@ -1,0 +1,248 @@
+---
+title: 'Local Development'
+description: 'Set up and run Python Arcade Suite on your local machine'
+icon: 'laptop-code'
+---
+
+This guide walks you through setting up Python Arcade Suite for local development and testing.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+<CardGroup cols={2}>
+  <Card title="Python 3.9+" icon="python">
+    Download from [python.org](https://www.python.org/downloads/)
+  </Card>
+  <Card title="pip" icon="box">
+    Package installer (included with Python)
+  </Card>
+  <Card title="Git" icon="git-alt">
+    Version control system
+  </Card>
+  <Card title="Text Editor" icon="code">
+    VS Code, PyCharm, or your preferred editor
+  </Card>
+</CardGroup>
+
+<Info>
+  Python Arcade Suite requires Python 3.9 or higher. Check your version with `python --version`
+</Info>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the Python Arcade Suite repository to your local machine:
+    
+    ```bash
+    git clone https://github.com/YorberR/Python_Arcade.git
+    cd Python_Arcade
+    ```
+    
+    This will create a `Python_Arcade` directory containing all the source code.
+  </Step>
+
+  <Step title="Create a Virtual Environment (Recommended)">
+    It's best practice to use a virtual environment to isolate project dependencies:
+    
+    ```bash
+    # Create virtual environment
+    python -m venv venv
+    
+    # Activate on Windows
+    venv\Scripts\activate
+    
+    # Activate on macOS/Linux
+    source venv/bin/activate
+    ```
+    
+    <Note>
+      You'll need to activate the virtual environment each time you work on the project.
+    </Note>
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install the required Python packages using pip:
+    
+    ```bash
+    pip install -r requirements.txt
+    ```
+    
+    This installs Streamlit and any other dependencies needed to run the games.
+  </Step>
+
+  <Step title="Run the Application">
+    Start the Streamlit development server:
+    
+    ```bash
+    streamlit run streamlit_app.py
+    ```
+    
+    You should see output similar to:
+    
+    ```
+    You can now view your Streamlit app in your browser.
+    
+    Local URL: http://localhost:8501
+    Network URL: http://192.168.1.x:8501
+    ```
+  </Step>
+
+  <Step title="Access the Application">
+    Open your web browser and navigate to:
+    
+    ```
+    http://localhost:8501
+    ```
+    
+    The Python Arcade Suite menu should appear, allowing you to select and play games.
+  </Step>
+</Steps>
+
+## Project Structure
+
+Understanding the codebase structure:
+
+```
+Python_Arcade/
+├── streamlit_app.py          # Main application entry point
+├── requirements.txt          # Python dependencies
+├── blackjack/
+│   └── streamlit_game.py    # Blackjack game logic
+├── Hangman/
+│   └── streamlit_game.py    # Hangman game logic
+└── Rock_paper_or_scissors/
+    └── streamlit_game.py    # Rock, Paper, Scissors logic
+```
+
+<Info>
+  Each game is modular with its own directory and `streamlit_game.py` file containing the game logic and UI.
+</Info>
+
+## Development Workflow
+
+### Making Changes
+
+1. **Edit the code** in your preferred text editor
+2. **Save your changes** - Streamlit will automatically detect changes
+3. The browser will show a **"Source file changed"** notification
+4. Click **"Rerun"** or press `R` to see your changes
+
+<Note>
+  Streamlit supports hot reloading, so you don't need to restart the server for most changes.
+</Note>
+
+### Testing Your Changes
+
+- Test each game individually through the sidebar menu
+- Verify session state persistence by playing multiple rounds
+- Check console output for any error messages
+- Test in different browsers if needed
+
+### Stopping the Server
+
+To stop the Streamlit server, press `Ctrl+C` in the terminal.
+
+## Configuration Options
+
+Streamlit allows customization through `.streamlit/config.toml`:
+
+```toml
+[server]
+port = 8501
+headless = false
+
+[theme]
+primaryColor = "#FF4B4B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+```
+
+<Warning>
+  Create the `.streamlit` directory in your project root if it doesn't exist.
+</Warning>
+
+## Troubleshooting
+
+### Port Already in Use
+
+If port 8501 is occupied:
+
+```bash
+# Run on a different port
+streamlit run streamlit_app.py --server.port 8502
+```
+
+### Module Import Errors
+
+**Problem:** `ModuleNotFoundError: No module named 'streamlit'`
+
+**Solution:**
+- Ensure your virtual environment is activated
+- Reinstall dependencies: `pip install -r requirements.txt`
+- Verify Python version: `python --version`
+
+### Game State Not Persisting
+
+**Problem:** Game state resets unexpectedly
+
+**Solution:**
+- This is expected behavior when the page fully reloads
+- Streamlit uses `st.session_state` for persistence between reruns
+- Check that session state variables are properly initialized
+
+### Streamlit Command Not Found
+
+**Problem:** `streamlit: command not found`
+
+**Solution:**
+```bash
+# Ensure streamlit is installed
+pip install streamlit
+
+# Or use python -m
+python -m streamlit run streamlit_app.py
+```
+
+### Python Version Issues
+
+**Problem:** Compatibility errors with Python version
+
+**Solution:**
+- Ensure Python 3.9+ is installed: `python --version`
+- Consider using [pyenv](https://github.com/pyenv/pyenv) to manage Python versions
+
+## Performance Tips
+
+<CardGroup cols={2}>
+  <Card title="Use Caching" icon="database">
+    Leverage `@st.cache_data` for expensive computations
+  </Card>
+  <Card title="Optimize Reruns" icon="arrows-rotate">
+    Minimize operations in the main script body
+  </Card>
+  <Card title="Session State" icon="memory">
+    Store only necessary data in session state
+  </Card>
+  <Card title="Clear Cache" icon="broom">
+    Use `streamlit cache clear` if needed
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Deploy to Streamlit Cloud" icon="cloud" href="/deployment/streamlit-cloud">
+    Learn how to deploy your app to production
+  </Card>
+  <Card title="Streamlit Documentation" icon="book" href="https://docs.streamlit.io">
+    Explore Streamlit's official documentation
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- [Streamlit API Reference](https://docs.streamlit.io/library/api-reference)
+- [Python Virtual Environments Guide](https://docs.python.org/3/tutorial/venv.html)
+- [Git Basics](https://git-scm.com/book/en/v2/Getting-Started-Git-Basics)
